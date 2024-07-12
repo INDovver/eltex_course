@@ -568,6 +568,7 @@ int main (){
             }
         }
         else{
+            inp[0]=tolower(inp[0]);
             switch (inp[0]){
                 case 'a':
                     addContact(&contactNum, contBook);
