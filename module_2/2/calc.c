@@ -7,6 +7,12 @@
 #define MF 20
 
 
+typedef struct op{
+    void (*operation) (bool*, double* , int*,...);
+    char name[MF];
+}op;
+
+
 void clearCons() {
   for (int i = 0; i < 50; ++i) {
     printf("\n");
@@ -18,6 +24,9 @@ void add(bool* go_on,double *res, int *count,...){
     clearCons();
     va_list arg;
     va_start(arg, count);
+    if (*count == 0){
+        return;
+    }
     for (int i = 0; i < *count; i++){
         *res+=va_arg(arg, double);
     }
@@ -42,6 +51,9 @@ void sub(bool* go_on,double *res, int *count,...){
             }
             *go_on=true;
         }
+        else if (*count == 0){
+            return;
+        }
         else{
             for (int i = 0; i < *count; i++){
                 *res-=va_arg(arg, double);
@@ -58,6 +70,9 @@ void mult(bool* go_on,double *res, int *count,...){
         if (*go_on==false){
             if(*count==1){
                 *res*=va_arg(arg,double);
+            }
+            else if (*count == 0){
+                return;
             }
             else{
                 *res = va_arg(arg, double);
@@ -84,6 +99,9 @@ void div(bool* go_on,double *res, int *count,...){
             if (*count==1){
                 *res /= va_arg(arg, double);
             }
+            else if (*count == 0){
+                return;
+            }
             else{
                 *res = va_arg(arg, double);
             }
@@ -115,9 +133,12 @@ void div(bool* go_on,double *res, int *count,...){
 }
 
 
-void getstr(int size, int *choice, double array[], int* cnt){
+void getstr(int size, int *choice, double* array, int* cnt, op* oper){
     char c;
-    printf("Введите номерр операции и числа, над которыми необходимо выполнить операцию через пробел\nЕсли это первое действие и введено одно число, то действие выполнится над нулём\n1) Прибавить\n2) Вычесть\n3) Умножить\n4) Разделисть\nr) Сброс\nq) выход\n");
+    printf("Введите номерр операции и числа, над которыми необходимо выполнить операцию через пробел\nЕсли это первое действие и введено одно число, то действие выполнится над нулём\nQ) Выйти\nR) Сбросить\n");
+    for (int i =0; i<size;i++){
+        printf("%d) %s\n", i+1, oper[i].name); 
+    }
 
     c = getchar();
     if (c=='r'||c=='q') {
@@ -159,9 +180,8 @@ void getstr(int size, int *choice, double array[], int* cnt){
 
 
 void main(void) {
-    void (*operation[4])(bool*,double*, int*,...) ={
-        add, sub, mult, div
-    };
+
+    op oper[4] = {{add, "Сложение"},{sub, "Вычетания"},{mult, "Умножение"},{div, "Деление"}};
     int choice,  count;
     double args[MF], res = 0;
     bool go_on = false;
@@ -176,17 +196,17 @@ void main(void) {
                 printf("Текущее значение: %.2f\n", res);
             }
         }
-        getstr(sizeof(operation)/sizeof(operation[0]), &choice, args, &count);
+        getstr(sizeof(oper)/sizeof(oper[0]), &choice, args, &count, oper);
         switch(count){
-            case 1:operation[choice-1](&go_on, &res, &count,args[0]); break;
-            case 2:operation[choice-1](&go_on, &res, &count,args[0],args[1]); break;
-            case 3:operation[choice-1](&go_on, &res, &count,args[0],args[1],args[2]); break;
-            case 4:operation[choice-1](&go_on, &res, &count,args[0],args[1],args[2],args[3]); break;
-            case 5:operation[choice-1](&go_on, &res, &count,args[0],args[1],args[2],args[3],args[4]); break;
+            case 1:oper[choice-1].operation(&go_on, &res, &count, args[0]); break;
+            case 2:oper[choice-1].operation(&go_on, &res, &count,args[0],args[1]); break;
+            case 3:oper[choice-1].operation(&go_on, &res, &count,args[0],args[1],args[2]); break;
+            case 4:oper[choice-1].operation(&go_on, &res, &count,args[0],args[1],args[2],args[3]); break;
+            case 5:oper[choice-1].operation(&go_on, &res, &count,args[0],args[1],args[2],args[3],args[4]); break;
             default: switch (choice){
                 case 'q': return;
                 case 'r': go_on=false; res = 0; clearCons(); break;
-                default: clearCons();break;
+                default: printf("Нет аргументов?\n"); break;
             };
         }
     }
