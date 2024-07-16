@@ -4,7 +4,7 @@
 #include <string.h>
 
 
-void str_to_char(char* str, unsigned char* ip){ //strtok получше понять
+void str_to_char(char* str, unsigned char* ip){
     char *token = strtok(str, ".");
     for(int i = 0; i<4;i++){
         ip[i] = atoi(token);
@@ -33,7 +33,7 @@ void main(int argc, char* argv[]){
     
     for (int i = 0; i<N;i++){
         for (int j = 0; j<4;j++){
-            ip_dist[i][j]=(rand()%256)&0b11111111; // узнать
+            ip_dist[i][j]=(rand()%256)&0b11111111; 
         }
     }
 
