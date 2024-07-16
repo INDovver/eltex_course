@@ -40,6 +40,19 @@ void clearCons() {
 }
 
 
+int get_curn(char (*str)[MF]){
+    int curn=-1;
+    for (int j=0; j<MPS;j++){
+        if (strlen(str[j])!=0){
+            curn = j;
+        }
+        else{
+            return curn;
+        }
+    }
+}
+
+
 void addField(char str[MF], char text[]){
     printf("%s", text);
     fgets(str, MF, stdin);
@@ -47,21 +60,13 @@ void addField(char str[MF], char text[]){
 }
 
 
-void addCase(char str[][MF]){
-    int curn=0;
-    for (int j=0; j<MPS;j++){
-        if (strlen(str[j])!=0){
-            curn = j+1;
-        }
-        else{
-            break;
-        }
-    }  
+void addCase(char (*str)[MF]){
+    int curn = get_curn(str);
     clearCons();
     if (strlen(str[MPS-1]) == 0){ 
         printf("Введите новое значение: ");
-        fgets(str[curn], MF, stdin);
-        str[curn][strcspn(str[curn], "\n")] = 0;
+        fgets(str[curn+1], MF, stdin);
+        str[curn+1][strcspn(str[curn+1], "\n")] = 0;
         clearCons();
         return;
     }
@@ -73,29 +78,14 @@ void addCase(char str[][MF]){
 }
 
 
-void editCase(char str[][MF]){
-    int curn=0;
-    for (int j=0; j<MPS;j++){
-        if (strlen(str[j])!=0){
-            curn = j;
-        }
-        else{
-            break;
-        }
-    } 
+void editCase(char (*str)[MF]){
+    int curn = get_curn(str);
     char numc[MF];
     int num;
     printf("Какой элемент изменить?: "); 
     fgets(numc, MF, stdin);
-    if ('0'<=numc[0]&&'9'>=numc[0]){
-        num = atoi(numc)-1;
-    }
-    else{
-        clearCons();
-        printf("Такого элемента нет\n");
-        return;
-    }
-    if (num>(curn) || num<0){
+    num = atoi(numc)-1;
+    if (num<0 || num>curn){
         clearCons();
         printf("Такого элемента нет\n");
         return;
@@ -111,29 +101,14 @@ void editCase(char str[][MF]){
 }
 
 
-void deleteCase(char str[][MF]){
-    int curn=0;
-    for (int j=0; j<MPS;j++){
-        if (strlen(str[j])!=0){
-            curn = j;
-        }
-        else{
-            break;
-        }
-    } 
+void deleteCase(char (*str)[MF]){
+    int curn = get_curn(str);
     char numc[MF];
     int num;
     printf("Какой элемент удалить?: ");
     fgets(numc, MF, stdin);
-    if ('0'<=numc[0]&&'9'>=numc[0]){
-        num = atoi(numc) - 1;
-    }
-    else{
-        clearCons();
-        printf("Такого элемента нет\n");
-        return;
-    }
-    if (num>(curn) || num<0){
+    num = atoi(numc)-1;
+    if (num<0 || num>curn){
         clearCons();
         printf("Такого элемента нет\n");
         return;
@@ -216,7 +191,7 @@ void editContact(Person array[], int ID){
                         break;
                     }
                 }
-                printf("A - добавить\nC - изменить\nD - удалить\nn - Ничего не менять\n");
+                printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                 switch (entEdit()){
                     case 'a':
                         addCase(array[i].PhoneNumber);
@@ -247,7 +222,7 @@ void editContact(Person array[], int ID){
                                 break;
                             }
                         }
-                        printf("A - добавить\nC - изменить\nD - удалить\nn - Ничего не менять\n");
+                        printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                         switch (entEdit()){
                             case 'a':
                                 addCase(array[i].PersonSM.Email);
@@ -274,7 +249,7 @@ void editContact(Person array[], int ID){
                                 break;
                             }
                         }
-                        printf("A - добавить\nC - изменить\nD - удалить\nn - Ничего не менять\n");
+                        printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                         switch (entEdit()){
                             case 'a':
                                 addCase(array[i].PersonSM.Messenger);
@@ -301,7 +276,7 @@ void editContact(Person array[], int ID){
                                 break;
                             }
                         }
-                        printf("A - добавить\nC - изменить\nD - удалить\nn - Ничего не менять\n");
+                        printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                         switch (entEdit()){
                             case 'a':
                                 addCase(array[i].PersonSM.SocialNetwork);
