@@ -141,7 +141,7 @@ void getstr(int size, int *choice, double* array, int* cnt, op* oper){
     }
 
     c = getchar();
-    if (c=='r'||c=='q') {
+    if (c=='r'||c=='q'||c=='R'||c=='Q') {
         while (getchar() != '\n'); 
         *choice = tolower(c);
         return;
@@ -181,7 +181,7 @@ void getstr(int size, int *choice, double* array, int* cnt, op* oper){
 
 void main(void) {
 
-    op oper[4] = {{add, "Сложение"},{sub, "Вычетания"},{mult, "Умножение"},{div, "Деление"}};
+    op oper[] = {{add, "Сложение"},{sub, "Вычетания"},{mult, "Умножение"},{div, "Деление"}};
     int choice,  count;
     double args[MF], res = 0;
     bool go_on = false;

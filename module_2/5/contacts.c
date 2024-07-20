@@ -3,42 +3,13 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-
-#define MF 20     // Max Field length
-#define MC 10     // Max Contats
-#define MPS 5     // Max Phone and Social media numbers  
-
-
-typedef struct Job {
-    char Organization[MF];
-    char Post[MF];
-} Job;
-
-
-typedef struct SocialMedia {
-    char Email[MPS][MF];             // Адресса электронных почт
-    char SocialNetwork[MPS][MF];     // Ссылки на страницы в соцсетях
-    char Messenger[MPS][MF];         // ССылки на профили в мессенджерах
-} SocialMedia;
-
-
-typedef struct Person {
-    int ID;                 // Скорее просто порядковый номер при выводе
-    char LastName[MF];    
-    char FirstName[MF];   
-    char Patronymic[MF];        // Отчество
-    char PhoneNumber[MPS][MF]; 
-    SocialMedia PersonSM;
-    Job PersonJob;                        
-} Person;
-
+#include "contacts.h" 
 
 void clearCons() {
   for (int i = 0; i < 50; ++i) {
     printf("\n");
   }
 }
-
 
 int get_curn(char (*str)[MF]){
     int curn=-1;
@@ -52,13 +23,11 @@ int get_curn(char (*str)[MF]){
     }
 }
 
-
 void addField(char str[MF], char text[]){
     printf("%s", text);
     fgets(str, MF, stdin);
     str[strcspn(str, "\n")] = 0;
 }
-
 
 void addCase(char (*str)[MF]){
     int curn = get_curn(str);
@@ -76,7 +45,6 @@ void addCase(char (*str)[MF]){
     }
     return;
 }
-
 
 void editCase(char (*str)[MF]){
     int curn = get_curn(str);
@@ -99,7 +67,6 @@ void editCase(char (*str)[MF]){
         return;
     }
 }
-
 
 void deleteCase(char (*str)[MF]){
     int curn = get_curn(str);
@@ -127,7 +94,6 @@ void deleteCase(char (*str)[MF]){
     }
 }
 
-
 char entEdit(){
     char text = getchar();
     while (getchar() != '\n'); 
@@ -135,10 +101,7 @@ char entEdit(){
     return text;
 }
 
-
-void editContact(Person array[], int ID){
-    int i = ID - 1;
-    int num = MPS+1;
+void editContact(list *head, list *el){
     while (true){
         printf("Что хотите изменить?\nN - ФИО\nJ - Работу\nP - Номера телефонов\nS - Соц. сети\nQ - Ничего\n");
         switch(entEdit()){
@@ -148,44 +111,44 @@ void editContact(Person array[], int ID){
             case 'n':
                 clearCons();
                 do {
-                    addField(array[i].LastName, "Введите Фамилию: ");
+                    addField(el->p.LastName, "Введите Фамилию: ");
                     clearCons();
-                    if (strlen(array[i].LastName) == 0) {
+                    if (strlen(el->p.LastName) == 0) {
                     clearCons();
                     printf("Ошибка! Фамилия не может быть пустой.\n");
                     }       
-                } while (strlen(array[i].LastName) == 0);
+                } while (strlen(el->p.LastName) == 0);
                 do {
-                    addField(array[i].FirstName, "Введите Имя: ");
+                    addField(el->p.FirstName, "Введите Имя: ");
                     clearCons();
-                    if (strlen(array[i].FirstName) == 0) {
+                    if (strlen(el->p.FirstName) == 0) {
                     clearCons();
                     printf("Ошибка! Имя не может быть пустым.\n");
                     }       
-                } while (strlen(array[i].FirstName) == 0);
+                } while (strlen(el->p.FirstName) == 0);
                 do {
-                    addField(array[i].Patronymic, "Введите Отчество: ");
+                    addField(el->p.Patronymic, "Введите Отчество: ");
                     clearCons();
-                    if (strlen(array[i].Patronymic) == 0) {
+                    if (strlen(el->p.Patronymic) == 0) {
                     clearCons();
                     printf("Ошибка! Отчество не может быть пустым.\n");
                     }       
-                } while (strlen(array[i].Patronymic) == 0);
+                } while (strlen(el->p.Patronymic) == 0);
                 break;
             case 'j':
                 clearCons();
-                addField(array[i].PersonJob.Organization, "Введите место работы: ");
+                addField(el->p.PersonJob.Organization, "Введите место работы: ");
                 clearCons();
 
-                addField(array[i].PersonJob.Post, "Введите должность: ");
+                addField(el->p.PersonJob.Post, "Введите должность: ");
                 clearCons();
                 break;
             case 'p':
                 clearCons();
                 printf("Текущие номера телефонов:\n");
                 for (int j=0; j<MPS;j++){
-                    if (strlen(array[i].PhoneNumber[j])!=0){
-                        printf("%d) %s\n", j+1, array[i].PhoneNumber[j]);
+                    if (strlen(el->p.PhoneNumber[j])!=0){
+                        printf("%d) %s\n", j+1, el->p.PhoneNumber[j]);
                     }
                     else{
                         break;
@@ -194,13 +157,13 @@ void editContact(Person array[], int ID){
                 printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                 switch (entEdit()){
                     case 'a':
-                        addCase(array[i].PhoneNumber);
+                        addCase(el->p.PhoneNumber);
                         break;
                     case'c':
-                        editCase(array[i].PhoneNumber);
+                        editCase(el->p.PhoneNumber);
                         break;
                     case 'd':
-                        deleteCase(array[i].PhoneNumber);
+                        deleteCase(el->p.PhoneNumber);
                         break;
                     case 'n':
                         clearCons();
@@ -215,8 +178,8 @@ void editContact(Person array[], int ID){
                         clearCons();
                         printf("Текущие почтовые ящики:\n");
                         for (int j=0; j<MPS;j++){
-                            if (strlen(array[i].PersonSM.Email[j])!=0){
-                                printf("%d) %s\n", j+1, array[i].PersonSM.Email[j]);
+                            if (strlen(el->p.PersonSM.Email[j])!=0){
+                                printf("%d) %s\n", j+1, el->p.PersonSM.Email[j]);
                             }
                             else{
                                 break;
@@ -225,13 +188,13 @@ void editContact(Person array[], int ID){
                         printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                         switch (entEdit()){
                             case 'a':
-                                addCase(array[i].PersonSM.Email);
+                                addCase(el->p.PersonSM.Email);
                                 break;
                             case'c':
-                                editCase(array[i].PersonSM.Email);
+                                editCase(el->p.PersonSM.Email);
                                 break;
                             case 'd':
-                                deleteCase(array[i].PersonSM.Email);
+                                deleteCase(el->p.PersonSM.Email);
                                 break;
                             case 'n':
                                 clearCons();
@@ -242,8 +205,8 @@ void editContact(Person array[], int ID){
                         clearCons();
                         printf("Текущие почтовые ящики:\n");
                         for (int j=0; j<MPS;j++){
-                            if (strlen(array[i].PersonSM.Messenger[j])!=0){
-                                printf("%d) %s\n", j+1, array[i].PersonSM.Messenger[j]);
+                            if (strlen(el->p.PersonSM.Messenger[j])!=0){
+                                printf("%d) %s\n", j+1, el->p.PersonSM.Messenger[j]);
                             }
                             else{
                                 break;
@@ -252,13 +215,13 @@ void editContact(Person array[], int ID){
                         printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                         switch (entEdit()){
                             case 'a':
-                                addCase(array[i].PersonSM.Messenger);
+                                addCase(el->p.PersonSM.Messenger);
                                 break;
                             case'c':
-                                editCase(array[i].PersonSM.Messenger);
+                                editCase(el->p.PersonSM.Messenger);
                                 break;
                             case 'd':
-                                deleteCase(array[i].PersonSM.Messenger);
+                                deleteCase(el->p.PersonSM.Messenger);
                                 break;
                             case 'n':
                                 clearCons();
@@ -269,8 +232,8 @@ void editContact(Person array[], int ID){
                         clearCons();
                         printf("Текущие соц. сети:\n");
                         for (int j=0; j<MPS;j++){
-                            if (strlen(array[i].PersonSM.SocialNetwork[j])!=0){
-                                printf("%d) %s\n", j+1, array[i].PersonSM.SocialNetwork[j]);
+                            if (strlen(el->p.PersonSM.SocialNetwork[j])!=0){
+                                printf("%d) %s\n", j+1, el->p.PersonSM.SocialNetwork[j]);
                             }
                             else{
                                 break;
@@ -279,13 +242,13 @@ void editContact(Person array[], int ID){
                         printf("A - добавить\nC - изменить\nD - удалить\nN - Ничего не менять\n");
                         switch (entEdit()){
                             case 'a':
-                                addCase(array[i].PersonSM.SocialNetwork);
+                                addCase(el->p.PersonSM.SocialNetwork);
                                 break;
                             case'c':
-                                editCase(array[i].PersonSM.SocialNetwork);
+                                editCase(el->p.PersonSM.SocialNetwork);
                                 break;
                             case 'd':
-                                deleteCase(array[i].PersonSM.SocialNetwork);
+                                deleteCase(el->p.PersonSM.SocialNetwork);
                                 break;
                             case 'n':
                                 clearCons();
@@ -301,75 +264,67 @@ void editContact(Person array[], int ID){
     }
 }
 
-
-void showFullInfo(Person array[], int ID){
-    int i = ID-1;
-    printf("ФИО: %s %s %s\nМесто работы: %s, Должность: %s\n", array[i].LastName, array[i].FirstName, 
-    array[i].Patronymic, array[i].PersonJob.Organization, array[i].PersonJob.Post);
+list *showFullInfo(list *head, int id){
+    list *ptr = head;
+    while(ptr!=NULL&&ptr->ID!=id){
+        ptr=ptr->next;
+    }
+    if(ptr==NULL){
+        printf("Такого контакта нет!\n");
+        return NULL;
+    }
+    printf("ФИО: %s %s %s\nМесто работы: %s, Должность: %s\n", ptr->p.LastName, ptr->p.FirstName, 
+    ptr->p.Patronymic, ptr->p.PersonJob.Organization, ptr->p.PersonJob.Post);
     printf("Номера телефонов:\n");
     for (int j=0; j< MPS; j++){
-        if (strlen(array[i].PhoneNumber[j])!=0){
-            printf("%s\n",array[i].PhoneNumber[j]);
+        if (strlen(ptr->p.PhoneNumber[j])!=0){
+            printf("%s\n",ptr->p.PhoneNumber[j]);
         }
     }
     printf("Электронные почты:\n");
     for (int j=0; j< MPS; j++){
-        if (strlen(array[i].PersonSM.Email[j])!=0){
-            printf("%s\n",array[i].PersonSM.Email[j]);
+        if (strlen(ptr->p.PersonSM.Email[j])!=0){
+            printf("%s\n",ptr->p.PersonSM.Email[j]);
         }
-    }
+    }  
     printf("Аккаунты соц. сетей:\n");
     for (int j=0; j< MPS; j++){
-        if (strlen(array[i].PersonSM.SocialNetwork[j])!=0){
-            printf("%s\n",array[i].PersonSM.SocialNetwork[j]);
+        if (strlen(ptr->p.PersonSM.SocialNetwork[j])!=0){
+            printf("%s\n",ptr->p.PersonSM.SocialNetwork[j]);
         }
     }
     printf("Аккаунты в мессенджерах:\n");
     for (int j=0; j< MPS; j++){
-        if (strlen(array[i].PersonSM.Messenger[j])!=0){
-            printf("%s\n",array[i].PersonSM.Messenger[j]);
+        if (strlen(ptr->p.PersonSM.Messenger[j])!=0){
+            printf("%s\n",ptr->p.PersonSM.Messenger[j]);
         }
-    }      
-    printf("\n");   
-    return;
-}
-
-
-void deleteContact(Person array[], int* contactNum, int ID){
-    int i = ID - 1;
-    for(i;i<(*contactNum)-1;i++){
-        array[i]=array[i+1];
-        array[i].ID--;
     }
-    memset(&array[(*contactNum)-1],0,sizeof(Person));
-    (*contactNum)--;
-    return;
+    return ptr;
 }
 
-
-void addContact(int* contactNum, Person array[]){ 
-    if (*contactNum<MC){
-        array[*contactNum].ID = *contactNum +1;
+Person init_p(){
+        Person p;
+        memset(&p,0,sizeof(Person));
         clearCons();
-        while (strlen(array[*contactNum].LastName) == 0){
-            addField(array[*contactNum].LastName, "Введите Фамилию: ");
-            if (strlen(array[*contactNum].LastName) == 0) {
+        while (strlen(p.LastName) == 0){
+            addField(p.LastName, "Введите Фамилию: ");
+            if (strlen(p.LastName) == 0) {
             clearCons();
             printf("Ошибка! Фамилия не может быть пустой.\n");
             }       
         }
         clearCons();
-        while (strlen(array[*contactNum].FirstName) == 0){
-            addField(array[*contactNum].FirstName, "Введите имя: ");
-            if (strlen(array[*contactNum].FirstName) == 0) {
+        while (strlen(p.FirstName) == 0){
+            addField(p.FirstName, "Введите имя: ");
+            if (strlen(p.FirstName) == 0) {
             clearCons();
             printf("Ошибка! Имя не может быть пустым.\n");
             }       
         }
         clearCons();
-        while (strlen(array[*contactNum].Patronymic) == 0){
-            addField(array[*contactNum].Patronymic, "Введите отчество: ");
-            if (strlen(array[*contactNum].Patronymic) == 0) {
+        while (strlen(p.Patronymic) == 0){
+            addField(p.Patronymic, "Введите отчество: ");
+            if (strlen(p.Patronymic) == 0) {
             clearCons();
             printf("Ошибка! Отчество не может быть пустым.\n");
             }       
@@ -380,9 +335,9 @@ void addContact(int* contactNum, Person array[]){
         switch (entEdit()){
             case 'y':
                 clearCons();
-                addField(array[*contactNum].PersonJob.Organization, "Введите место работы: ");
+                addField(p.PersonJob.Organization, "Введите место работы: ");
                 clearCons();
-                addField(array[*contactNum].PersonJob.Post, "Введите должность: ");
+                addField(p.PersonJob.Post, "Введите должность: ");
                 break;
 
             case 'n':
@@ -395,7 +350,7 @@ void addContact(int* contactNum, Person array[]){
         switch (choice){
             case 'y':
                 clearCons();
-                addField(array[*contactNum].PhoneNumber[0], "Введите номер телефона: ");
+                addField(p.PhoneNumber[0], "Введите номер телефона: ");
                 int i=1;
                 while((choice == 'y') && i<5){
                     clearCons();
@@ -404,7 +359,7 @@ void addContact(int* contactNum, Person array[]){
                     switch (choice){
                         case 'y':
                             clearCons();
-                            addField(array[*contactNum].PhoneNumber[i], "Введите номер телефона: ");
+                            addField(p.PhoneNumber[i], "Введите номер телефона: ");
                             i++;
                             break;
                         case 'n':
@@ -427,14 +382,14 @@ void addContact(int* contactNum, Person array[]){
                     switch (entEdit()){
                         case 'e':
                             for (int i = 0; i<MPS; i++){
-                                if (strlen(array[*contactNum].PersonSM.Email[i])==0){
+                                if (strlen(p.PersonSM.Email[i])==0){
                                     ind = i;
                                     break;
                                 }
                             }
                             if (ind != -1){
                                 clearCons();
-                                addField(array[*contactNum].PersonSM.Email[ind], "Введите электронную почту: ");
+                                addField(p.PersonSM.Email[ind], "Введите электронную почту: ");
                             }
                             else{
                                 clearCons();
@@ -445,14 +400,14 @@ void addContact(int* contactNum, Person array[]){
 
                         case 's':
                             for (int i = 0; i<MPS; i++){
-                                if (strlen(array[*contactNum].PersonSM.SocialNetwork[i])==0){
+                                if (strlen(p.PersonSM.SocialNetwork[i])==0){
                                     ind = i;
                                     break;
                                 }
                             }
                             if (ind != -1){
                                 clearCons();
-                                addField(array[*contactNum].PersonSM.SocialNetwork[ind], "Введите социальную сеть и свой логин: ");
+                                addField(p.PersonSM.SocialNetwork[ind], "Введите социальную сеть и свой логин: ");
                             }
                             else{
                                 clearCons();
@@ -463,14 +418,14 @@ void addContact(int* contactNum, Person array[]){
 
                         case 'm':
                             for (int i = 0; i<MPS; i++){
-                                if (strlen(array[*contactNum].PersonSM.Messenger[i])==0){
+                                if (strlen(p.PersonSM.Messenger[i])==0){
                                     ind = i;
                                     break;
                                 }
                             }
                             if (ind != -1){
                                 clearCons();
-                                addField(array[*contactNum].PersonSM.Messenger[ind], "Введите мессенджер и свой логин: ");
+                                addField(p.PersonSM.Messenger[ind], "Введите мессенджер и свой логин: ");
                             }
                             else{
                                 clearCons();
@@ -492,65 +447,65 @@ void addContact(int* contactNum, Person array[]){
                 clearCons();
                 break;
         }
-
-        (*contactNum)++;
-        return;
-    }
-
-    else{
-        clearCons();
-        printf("Слишком много контактов\n");
-        return;
-    } 
+        return p;
 }
 
+void deleteContact(list **head, list *el){
+    if(el->prev!=NULL){
+        el->prev->next=el->next;
+    }
+    else{
+        *head=el->next;
+    }
+    if(el->next!=NULL){
+        el->next->prev=el->prev;
+    }
+    list *tmp = el;
+    while(tmp!=NULL){
+        tmp->ID--;
+        tmp=tmp->next;
+    }
+    free(el);
+}
 
-int main (){
-    clearCons();
-    Person contBook[MC];
-    memset(contBook, 0, MC*sizeof(Person));
-    int contactNum = 0;
-    
-    while (true){
-        printf("A - добавить\nQ - выйти\nдля взаимедействия с контактом выберие его ID\n");
-        for (int i=0; i<contactNum; i++){
-                printf("%d) %s %s %s\n", contBook[i].ID, contBook[i].LastName,contBook[i].FirstName,contBook[i].Patronymic);
-            }
-        char inp[MF];
-        fgets(inp, MF, stdin);
-        clearCons();
-        if (inp[0]>='0'&& inp[0]<='9'){
-            int id = atoi(inp); 
-            if (id <= contactNum) {
-                showFullInfo(contBook, id); 
-                printf("Меню действий над контактом:\nD - удалить\nC - изменить\nN - не изменять\n");
-                switch(entEdit()){
-                    case 'd':
-                        deleteContact(contBook, &contactNum, id);
-                        clearCons();
-                        break;
-                    case 'n':
-                        clearCons();
-                        break;
-                    case 'c':
-                        clearCons();
-                        editContact(contBook, id);
-                        clearCons();
-                        break;
-                }
-            } else {
-                printf("Неверный ID контакта!\n");
-            }
+void addContact(struct list **head, Person pers){ 
+    list *new = malloc(sizeof(list));
+    new->p=pers;
+    list *tmp = *head;
+    new->next=NULL;
+    new->prev=NULL;
+    new->ID = 1;
+    if (*head == NULL){
+        *head = new;
+        return;
+    }
+    while(strcmp(pers.LastName, tmp->p.LastName) >= 0) { 
+        if (tmp->next!=NULL){
+            tmp = tmp->next;
         }
         else{
-            inp[0]=tolower(inp[0]);
-            switch (inp[0]){
-                case 'a':
-                    addContact(&contactNum, contBook);
-                    break;
-                case 'q':
-                    return 0;
-            }
+            new->prev=tmp;
+            new->ID=tmp->ID+1;
+            tmp->next=new; 
+            return;
         }
+    }
+    if (tmp!=(*head)){
+        new->prev=tmp->prev;
+        new->next=tmp;
+        tmp->prev->next=new;
+        tmp->prev=new;
+        new->ID=tmp->ID;
+    }
+    else{
+        new->prev=NULL;
+        new->next=tmp;
+        new->ID=tmp->ID; 
+        tmp->prev=new;
+        *head=new;
+    }
+    while(tmp!=NULL){
+        tmp->ID++;
+        tmp=tmp->next;
     }
 }
