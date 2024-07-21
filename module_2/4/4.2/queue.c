@@ -7,7 +7,7 @@
 #define MF 100
 
 typedef struct{
-    char prior;
+    unsigned char prior;
     char msg[MF];
 }element;
 
@@ -26,15 +26,15 @@ void add_el(queue *que){
         return;
     }
     char text[MF];
-    char pri;
+    unsigned char prio;
     printf("Enter priority number [0:255] and message using comma\n");
-    if (scanf("%d, %s", &pri, text)==2){
+    if (scanf("%d, %s", &prio, text)==2){
         while(getchar()!='\n');
         int i=0;
-        for (; i<que->size&&que->elinq[i].prior<pri; i++);
+        for (; i<que->size&&que->elinq[i].prior<prio; i++);
         for(int j = que->size;j>i; j--) 
             que->elinq[j]= que->elinq[j-1];
-        que->elinq[i].prior=pri;
+        que->elinq[i].prior=prio;
         strcpy(que->elinq[i].msg, text);
         que->elinq[i].msg[MF-1] = '\0';
         que->size++;
@@ -63,7 +63,7 @@ element min_extr_el(queue *que){
         printf("Queue is empty\n");
         return empty;
     }
-    char prio; 
+    unsigned char prio; 
     printf("Enter element min prior number: ");
     if(scanf("%d", &prio)!=1){
         while(getchar()!='\n');
@@ -95,7 +95,7 @@ element exact_extr_el(queue *que){
         printf("Queue is empty\n");
         return empty;
     }
-    char prio; 
+    unsigned char prio; 
     printf("Enter element exact prior number: ");
     if(scanf("%d", &prio)!=1){
         while(getchar()!='\n');
@@ -124,7 +124,7 @@ int main(){
     queue queueue;
     que_init(&queueue);
     while (true){
-        printf("Enter action key:\nA)Add\nE)Extract first element\nX)Extract elements by exact prior number\nM)Extract elements by minimum prior number\n");
+        printf("Enter action key:\nA)Add\nE)Extract first element\nX)Extract elements by exact prior number\nM)Extract elements by minimum prior number\nQ)Quit\n");
         char c = getchar();
         c = tolower(c);
         while(getchar()!='\n');
