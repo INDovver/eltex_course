@@ -28,7 +28,7 @@ void add_el(queue *que){
     char text[MF];
     unsigned char prio;
     printf("Enter priority number [0:255] and message using comma\n");
-    if (scanf("%d, %s", &prio, text)==2){
+    if (scanf("%hhu, %s", &prio, text)==2){
         while(getchar()!='\n');
         int i=0;
         for (; i<que->size&&que->elinq[i].prior<prio; i++);
@@ -65,7 +65,7 @@ element min_extr_el(queue *que){
     }
     unsigned char prio; 
     printf("Enter element min prior number: ");
-    if(scanf("%d", &prio)!=1){
+    if(scanf("%hhu", &prio)!=1){
         while(getchar()!='\n');
         printf("Wrong prior number\n");
         return empty;
@@ -97,7 +97,7 @@ element exact_extr_el(queue *que){
     }
     unsigned char prio; 
     printf("Enter element exact prior number: ");
-    if(scanf("%d", &prio)!=1){
+    if(scanf("%hhu", &prio)!=1){
         while(getchar()!='\n');
         printf("Wrong prior number\n");
         return empty;
