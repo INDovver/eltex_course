@@ -18,11 +18,9 @@ void accessibility(int signum) {
     switch(signum) {
         case SIGUSR1:
             file_accessible = 0;
-            //printf("sig 1 has gotten\n");
             break;
         case SIGUSR2:
             file_accessible = 1;
-            //printf("sig 2 has gotten\n");
             break;
     }
 }
