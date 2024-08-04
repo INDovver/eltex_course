@@ -27,18 +27,29 @@ int main() {
     }
     msg_buffer message;
     while (1) {
-        msgrcv(msgid, &message, sizeof(message.msg_text), 0, 0);
+        printf("Receive: ");
+        fflush(stdout);
+        if((msgrcv(msgid, &message, sizeof(message.msg_text), 0, 0))==-1){
+            perror("send error");
+            exit(EXIT_FAILURE);
+        }
         if(message.msg_type==TERMINATE_MSG_TYPE){
             printf("Exiting\n");
-            msgctl(msgid, IPC_RMID, NULL);
             exit(EXIT_SUCCESS);
         }
-        printf("Received: %s\n", message.msg_text);
-        scanf("%ld %100s",&message.msg_type,message.msg_text);
-        while(getchar()!='\n');
-        msgsnd(msgid, &message, sizeof(message.msg_text), 0);
+        printf("%s\n", message.msg_text);
+        printf("Send: ");
+        scanf("%ld",&message.msg_type);
+        while(getchar()!=' ');
+        fgets(message.msg_text,sizeof(message.msg_text),stdin);
+        message.msg_text[strcspn(message.msg_text,"\n")]='\0';
+        if((msgsnd(msgid, &message, sizeof(message.msg_text), 0))==-1){
+            perror("send error");
+            exit(EXIT_FAILURE);
+        }
         if(message.msg_type==TERMINATE_MSG_TYPE){
             printf("Exitting\n");
+            msgctl(msgid, IPC_RMID, NULL);
             exit(EXIT_SUCCESS);
         }
     }

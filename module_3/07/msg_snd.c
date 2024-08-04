@@ -2,29 +2,65 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mqueue.h>
-#include <sys/ipc.h>
-#include <unistd.h>
 
+#define MSG_SIZE 100
 #define TERMINATE_MSG_TYPE 999
-#define QUEUE_NAME "queueue"
+#define QUEUE_NAME "/queueue"
+
+typedef struct msg_buffer {
+    unsigned msg_type;
+    char msg_text[MSG_SIZE];
+}msg_buffer;
 
 int main() {
-    mqd_t msgid = mq_open(QUEUE_NAME, 0666 | IPC_CREAT|O_CREAT);
+    mqd_t msgid;
+    struct mq_attr attr;
+    msg_buffer message;
+    attr.mq_msgsize = MSG_SIZE;
+    attr.mq_curmsgs = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_flags = 0;
+    
+    if((msgid = mq_open(QUEUE_NAME, O_RDWR|O_CREAT,0666,&attr))==(mqd_t)-1){
+        perror("mq error");
+        exit(EXIT_FAILURE);
+    }
+
     while (1) {
-        scanf("%ld %100s",&message.msg_type,message.msg_text);
-        while(getchar()!='\n');
-        msgsnd(msgid, &message, sizeof(message.msg_text), 0);
+        printf("Send: ");
+        scanf("%u",&message.msg_type);
+        while(getchar()!=' ');
+        fgets(message.msg_text,sizeof(message.msg_text),stdin);
+        message.msg_text[strcspn(message.msg_text,"\n")]='\0';
+
+        if(mq_send(msgid, message.msg_text, sizeof(message.msg_text), message.msg_type)==-1){
+            perror("send error");
+            mq_close(msgid);
+            exit(EXIT_FAILURE);
+        }
+
         if(message.msg_type==TERMINATE_MSG_TYPE){
             printf("Exiting\n");
+            mq_unlink(QUEUE_NAME);
+            mq_close(msgid);
             exit(EXIT_SUCCESS);
         }
-        msgrcv(msgid, &message, sizeof(message.msg_text), 0, 0);
+
+        printf("Receive: ");
+        fflush(stdout);
+        if((mq_receive(msgid, message.msg_text, sizeof(message.msg_text), &message.msg_type))==-1){
+            perror("send error");
+            mq_close(msgid);
+            exit(EXIT_FAILURE);
+        }
+
         if(message.msg_type==TERMINATE_MSG_TYPE){
             printf("Exiting\n");
-            msgctl(msgid, IPC_RMID, NULL);
+            mq_close(msgid);
             exit(EXIT_SUCCESS);
         }
-        printf("Received: %s\n", message.msg_text);
+
+        printf("%s\n", message.msg_text);
     }
 }
 

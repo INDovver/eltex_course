@@ -1,44 +1,62 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <unistd.h>
+#include <mqueue.h>
 
 #define MSG_SIZE 100
 #define TERMINATE_MSG_TYPE 999
-#define FILE_NAME "ftok.txt"
+#define QUEUE_NAME "/queueue"
 
 typedef struct msg_buffer {
-    long msg_type;
+    unsigned msg_type;
     char msg_text[MSG_SIZE];
 }msg_buffer;
 
 int main() {
-    key_t key;
-    int msgid;
-    if((key = ftok(FILE_NAME, 65))==-1){
-        perror("ftok error");
-        exit(EXIT_FAILURE);
-    }
-    if ((msgid = msgget(key, 0666 | IPC_CREAT))==-1){
-        perror("message queue error");
-        exit(EXIT_FAILURE);
-    }
+    mqd_t msgid;
+    struct mq_attr attr;
     msg_buffer message;
+    attr.mq_msgsize = MSG_SIZE;
+    attr.mq_curmsgs = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_flags = 0;
+
+    if((msgid = mq_open(QUEUE_NAME, O_RDWR|O_CREAT,0666,&attr))==(mqd_t)-1){
+        perror("mq error");
+        exit(EXIT_FAILURE);
+    }
+    
     while (1) {
-        msgrcv(msgid, &message, sizeof(message.msg_text), 0, 0);
+        printf("Receive: ");
+        fflush(stdout);
+        if((mq_receive(msgid, message.msg_text, sizeof(message.msg_text), &message.msg_type))==-1){
+            perror("send error");
+            mq_close(msgid);
+            exit(EXIT_FAILURE);
+        }
+
         if(message.msg_type==TERMINATE_MSG_TYPE){
             printf("Exiting\n");
-            msgctl(msgid, IPC_RMID, NULL);
+            mq_close(msgid);
             exit(EXIT_SUCCESS);
         }
-        printf("Received: %s\n", message.msg_text);
-        scanf("%ld %100s",&message.msg_type,message.msg_text);
-        while(getchar()!='\n');
-        msgsnd(msgid, &message, sizeof(message.msg_text), 0);
+
+        printf("%s\n", message.msg_text);
+        printf("Send: ");
+        scanf("%u",&message.msg_type);
+        while(getchar()!=' ');
+        fgets(message.msg_text,sizeof(message.msg_text),stdin);
+        message.msg_text[strcspn(message.msg_text,"\n")]='\0';
+
+        if(mq_send(msgid, message.msg_text, sizeof(message.msg_text), message.msg_type)==-1){
+            perror("send error");
+            exit(EXIT_FAILURE);
+        }
+
         if(message.msg_type==TERMINATE_MSG_TYPE){
-            printf("Exitting\n");
+            printf("Exiting\n");
+            mq_unlink(QUEUE_NAME);
+            mq_close(msgid);
             exit(EXIT_SUCCESS);
         }
     }
