@@ -1,1 +1,0 @@
-# eltex_course

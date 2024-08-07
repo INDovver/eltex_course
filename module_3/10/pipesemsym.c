@@ -7,19 +7,20 @@
 #include <sys/wait.h>
 #include <time.h>  
 #include <fcntl.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
+#include <semaphore.h>
 
 #define WR 1
 #define RD 0
 #define FILE_NAME "pipe_file.txt"
+#define SEMAPHORE_NAME "/semaphore"
 
-void child_action(int *d, char *argv, int file_d, int semid){
+void child_action(int *d, char *argv, int file_d, sem_t* semid){
     if(close(d[RD])==-1){
         perror("close for chiled failure");
         close(d[WR]);
         close(file_d);
-        semctl(semid, 0, IPC_RMID);
+        sem_unlink(SEMAPHORE_NAME);
+        sem_close(semid);
         exit(EXIT_FAILURE);
     }
 
@@ -32,17 +33,19 @@ void child_action(int *d, char *argv, int file_d, int semid){
         if(write(d[WR],&random_num,sizeof(int))==-1){
             close(d[WR]);
             close(file_d);
-            semctl(semid, 0, IPC_RMID);
+            sem_unlink(SEMAPHORE_NAME);
+            sem_close(semid);
             perror("writing goes wrong");
             exit(EXIT_FAILURE);
         }
         sleep(1);  
-        semop(semid,&(struct sembuf){0,-1,0},1); //Ожидание записи в файл родительским процессом
+        sem_post(semid); //Ожидание записи в файл родительским процессом
         if(lseek(file_d,0,SEEK_SET)==-1){
             perror("lseeking goes wrong");
             close(d[WR]);
             close(file_d);
-            semctl(semid, 0, IPC_RMID);
+            sem_unlink(SEMAPHORE_NAME);
+            sem_close(semid);
             exit(EXIT_FAILURE); 
         }
         while((size = read(file_d, &read_inf,sizeof(int)))>0){
@@ -52,21 +55,24 @@ void child_action(int *d, char *argv, int file_d, int semid){
             perror("reading goes wrong");
             close(d[WR]);
             close(file_d);
-            semctl(semid, 0, IPC_RMID);
+            sem_unlink(SEMAPHORE_NAME);
+            sem_close(semid);;
             exit(EXIT_FAILURE);
         }
     }
-    semctl(semid, 0, IPC_RMID);
+    sem_unlink(SEMAPHORE_NAME);
+    sem_close(semid);
     close(d[WR]);
     close(file_d);
     exit(EXIT_SUCCESS);
 }
 
-void parent_action(int *d, int file_d,int pid, int semid){
+void parent_action(int *d, int file_d,int pid, sem_t* semid){
     if(close(d[WR])==-1){
         perror("close for parent failure");
         close(d[RD]);
         close(file_d);
+        sem_close(semid);
         exit(EXIT_FAILURE);
     }
     while(true){
@@ -76,6 +82,7 @@ void parent_action(int *d, int file_d,int pid, int semid){
         if(size==-1){
             close(d[RD]);
             close(file_d);
+            sem_close(semid);
             perror("reading goes wrong");
             exit(EXIT_FAILURE);
         }
@@ -83,23 +90,24 @@ void parent_action(int *d, int file_d,int pid, int semid){
             printf("reading is done\n");
             close(d[RD]);
             close(file_d);
+            sem_close(semid);
             exit(EXIT_SUCCESS);
         }
         printf("parent proc read number is %d\n",read_num);
         if (write(file_d, &read_num, size)==-1){
             close(d[RD]);
             close(file_d);
+            sem_close(semid);
             perror("write error");
             exit(EXIT_FAILURE);
         }
-        semop(semid,&(struct sembuf){0,1,0},1); //Допуск дочернего файла к след. итерации (генерация + чтение из файла).
+        sem_wait(semid);
     }
 }
 
 int main(int argc, char* argv[]){
     int pid;
-    key_t key;
-    int semid;
+    sem_t* sem;
 
     if (argc!=2){
         printf("too few or too much arguments\n");
@@ -116,20 +124,17 @@ int main(int argc, char* argv[]){
         exit(EXIT_FAILURE);
     };
     
-    if((key=ftok(FILE_NAME,64))==-1){
-        perror("key error");
-        exit(EXIT_FAILURE);
-    }
-    if((semid = semget(key,1,0666|IPC_CREAT))==-1){
+    if((sem = sem_open(SEMAPHORE_NAME,O_RDWR|O_CREAT,0666,0))==SEM_FAILED){
         perror("semget error");
         exit(EXIT_FAILURE);
     }
-    printf("semid is %d\n",semid);
 
     srand(time(NULL));
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
         perror("pipe creation failed");
+        sem_unlink(SEMAPHORE_NAME);
+        sem_close(sem);
         close(fd);
         exit(EXIT_FAILURE);
     }
@@ -137,12 +142,13 @@ int main(int argc, char* argv[]){
     switch(pid = fork()){
         case -1:
             close(fd);
+            sem_unlink(SEMAPHORE_NAME);
+            sem_close(sem);
             close(pipe_fd[RD]);
             close(pipe_fd[WR]);
-            semctl(semid, 0, IPC_RMID);
             perror("fork failure");
             exit(EXIT_FAILURE);
-        case 0: child_action(pipe_fd, argv[1], fd, semid);
-        default: parent_action(pipe_fd, fd, pid, semid);
+        case 0: child_action(pipe_fd, argv[1], fd, sem);
+        default: parent_action(pipe_fd, fd, pid, sem);
     }
 }

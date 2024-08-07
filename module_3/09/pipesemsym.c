@@ -13,7 +13,7 @@
 #define WR 1
 #define RD 0
 #define FILE_NAME "pipe_file.txt"
-#define MAX_PROC_READ 2  //Определяет количетсово одновременно читающих процессов
+#define MAX_PROC_READ 1  //Определяет количетсово одновременно читающих процессов
 
 void child_action(int *d, char *argv, int file_d, int semid){
     if(close(d[RD])==-1){
@@ -38,7 +38,7 @@ void child_action(int *d, char *argv, int file_d, int semid){
             exit(EXIT_FAILURE);
         }
         sleep(1);  
-        semop(semid,(struct sembuf[2]){0,-1,0},2); //Ожидание записи в файл родительским процессом
+        semop(semid,&(struct sembuf){0,-1,0},1); //Ожидание записи в файл родительским процессом
         if(lseek(file_d,0,SEEK_SET)==-1){
             perror("lseeking goes wrong");
             close(d[WR]);
