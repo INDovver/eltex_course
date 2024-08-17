@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
+#include <sys/mman.h>
+#include <semaphore.h>
 #include <time.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
 #include <wait.h>
+#include <fcntl.h>
 
-#define FILE_NAME "textfile.txt"
+#define SEM1_NAME "/semaphore1"
+#define SEM2_NAME "/semaphore2"
+#define SHM_NAME "/sharedmemory"
 #define KEY_ID 12
 #define MAX_NUM 10+1
 #define SIZE_NUM sizeof(int)*(MAX_NUM+2)
@@ -43,31 +45,44 @@ int min(int *array, int size){
 }
 
 
-void sem_shm_get(int* semid, int* shmid, size_t size){
-    key_t ipc_key = ftok(FILE_NAME, KEY_ID);
-    if (ipc_key ==-1){
-        perror("key error");
+void sem_shm_get(sem_t *semid[], int* shmid,size_t size){
+    semid[0] = sem_open(SEM1_NAME,O_CREAT,0666,0);
+    if (semid[0]==SEM_FAILED){
+        perror("semaphore 1 error");
+        exit(EXIT_FAILURE);
+    }   
+    semid[1] = sem_open(SEM2_NAME,O_CREAT,0666,0);
+    if (semid[1]==SEM_FAILED){
+        perror("semaphore 2 error");
+        sem_close(semid[0]);
+        sem_unlink(SEM1_NAME);
         exit(EXIT_FAILURE);
     }
-    *shmid = shmget(ipc_key,size,IPC_CREAT|0666);
-    if (*shmid ==-1){
+    *shmid = shm_open(SHM_NAME,O_RDWR|O_CREAT,0666);
+    if (*shmid==-1){
+        sem_close(semid[0]);
+        sem_unlink(SEM1_NAME);                      
+        sem_close(semid[1]);
+        sem_unlink(SEM2_NAME);
         perror("shared memory error");
         exit(EXIT_FAILURE);
     }
-    *semid = semget(ipc_key,2,IPC_CREAT|0666);
-    if (*semid ==-1){
-        perror("semaphore error");
-        shmctl(*shmid,IPC_RMID,NULL);
+    if (ftruncate(*shmid, size) == -1) {
+        perror("ftruncate");
         exit(EXIT_FAILURE);
     }
 }
 
 void parent_func(void){
-    int semid;
+    sem_t* semid[2];
     int shmid;
     int cntr=0;
-    sem_shm_get(&semid, &shmid,SIZE_NUM);
-    int* ptr = shmat(shmid,NULL,0);
+    sem_shm_get(semid, &shmid,SIZE_NUM);
+    int* ptr = mmap(NULL,SIZE_NUM,PROT_READ|PROT_WRITE,MAP_SHARED,shmid,0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap error");
+        exit(EXIT_FAILURE);
+    }
 
     while(go_on==0){
         int num_of_num = rand()%MAX_NUM; //генерация количества чисел
@@ -81,35 +96,44 @@ void parent_func(void){
         printf("\n");  
         memcpy(ptr,nums,size); //копирывание в разделяемую память
         free(nums);
-        semop(semid,&(struct sembuf){0,1,0},1); //разрешение обращения к разделяемой памяти для доч. процесса
-        semop(semid,&(struct sembuf){1,-1,0},1); //ожидание разрешения считывания с разделяемой памяти для род.процесса
+        sem_post(semid[0]);
+        sem_wait(semid[1]);
         printf("max num is %d and min num is %d\n",ptr[num_of_num+1],ptr[num_of_num+2]);
         cntr++;
         sleep(1);
     }
     printf("\nnum of processed data sets: %d\n",cntr);
-    shmdt((void*)ptr);
-    shmctl(shmid,IPC_RMID,NULL);
-    semctl(semid,0,IPC_RMID);
+    munmap(ptr,SIZE_NUM);
+    shm_unlink(SHM_NAME);
+    sem_close(semid[0]);
+    sem_unlink(SEM1_NAME);
+    sem_close(semid[1]);
+    sem_unlink(SEM2_NAME);
 }
 
 
 void child_func(void){
-    int semid;
+    sem_t* semid[2];
     int shmid;
-    sem_shm_get(&semid, &shmid,SIZE_NUM);
-    int* ptr = shmat(shmid,NULL,0);
+    sem_shm_get(semid, &shmid,SIZE_NUM);
+    int* ptr = mmap(NULL,SIZE_NUM,PROT_READ|PROT_WRITE,MAP_SHARED,shmid,0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap error");
+        exit(EXIT_FAILURE);
+    }
     while(go_on==0){
-        if(semop(semid,&(struct sembuf){0,-1,IPC_NOWAIT},1)==-1){//ожидание разрешения обращения к разделяемой памяти
-            usleep(1e3);
-            continue;
+        if(sem_trywait(semid[0])==-1){
+            usleep(1e3); //Добавил trywait, так как возникает бесконечное блокирование, т.к. род. процесс не разблокируя семафор exit'ается
+            continue; //В сис5 такой проблемы не возникает, почему-то, но в посиксе такая проблема есть!
         } 
         ptr[(*ptr)+1]=max(ptr+1,*ptr); //записывает в предпоследний элемент массива max число
         ptr[(*ptr)+2]=min(ptr+1,*ptr); //записывает в последний элемент массива min число
-        semop(semid,&(struct sembuf){1,1,0},1); //разрешение на считывание разделяемой памяти для род. процесса
+        sem_post(semid[1]);
     }
-    shmdt((void*)ptr);
-    exit(EXIT_SUCCESS);
+    munmap(ptr,SIZE_NUM);
+    sem_close(semid[0]);
+    sem_close(semid[1]);
+    exit(EXIT_SUCCESS); 
 }
 
 
