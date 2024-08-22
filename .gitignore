@@ -1,8 +1,7 @@
 # Custom
-test.c
-test
-.vscode
+tests
 *.txt
+*.vscode
 
 # Prerequisites
 *.d

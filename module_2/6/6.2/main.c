@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include "contacts.h"
-#include "dlfcn.h"
 
 int main (){
     clearCons();

@@ -11,19 +11,6 @@ typedef struct op{
 
 void clearCons();
 
-
-void add(bool* go_on,double *res, int *count,...);
-
-
-void sub(bool* go_on,double *res, int *count,...);
-
-
-void mult(bool* go_on,double *res, int *count,...);
-
-
-void div(bool* go_on,double *res, int *count,...);
-
-
 void getstr(int size, int *choice, double* array, int* cnt, op* oper);
 
 #endif
