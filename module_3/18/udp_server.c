@@ -98,14 +98,12 @@ int main() {
         error("ERROR on accept");
       }
 
-      printf("New connection, socket fd is %d, ip is : %s, port : %d\n",
-             newsockfd, inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+      printf("New client\n");
 
       // Добавление нового сокета в массив клиентских сокетов
       for (i = 0; i < FD_SETSIZE; i++) {
         if (client_sockets[i] == 0) {
           client_sockets[i] = newsockfd;
-          printf("Adding to list of sockets as %d\n", i);
           break;
         }
       }
