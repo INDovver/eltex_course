@@ -41,22 +41,21 @@ int myfunc(int a, int b, char sign) {
 
 int main() {
   int sockfd, newsockfd;
+  int max_sd, activity, i;
   struct sockaddr_in serv_addr, cli_addr;
-  socklen_t clilen;
+  socklen_t clilen = sizeof(cli_addr);
   fd_set readfds;
-  int client_sockets[FD_SETSIZE]; // массив клиентских сокетов
-  int max_sd, activity, i, sd;
+  fd_set prime;
+  FD_ZERO(&readfds);
+  FD_ZERO(&prime);
   char buffer[BUF_SIZE];
-
-  // Инициализация всех клиентских сокетов нулями
-  for (i = 0; i < FD_SETSIZE; i++) {
-    client_sockets[i] = 0;
-  }
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
     error("ERROR opening socket");
   }
+  FD_SET(sockfd, &prime);
+  max_sd = sockfd;
 
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -71,62 +70,41 @@ int main() {
   listen(sockfd, 5);
 
   while (1) {
-    // Очистка и настройка файлового дескриптора
-    FD_ZERO(&readfds);
-    FD_SET(sockfd, &readfds);
-    max_sd = sockfd;
-
-    // Добавление клиентских сокетов в набор дескрипторов
-    for (i = 0; i < FD_SETSIZE; i++) {
-      sd = client_sockets[i];
-      if (sd > 0) {
-        FD_SET(sd, &readfds);
-      }
-      if (sd > max_sd) {
-        max_sd = sd;
-      }
-    }
+    readfds = prime;
 
     // Ожидание активности на одном из сокетов
     activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-
-    // Обработка нового подключения
-    if (FD_ISSET(sockfd, &readfds)) {
-      clilen = sizeof(cli_addr);
-      newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
-      if (newsockfd < 0) {
-        error("ERROR on accept");
-      }
-
-      printf("New client\n");
-
-      // Добавление нового сокета в массив клиентских сокетов
-      for (i = 0; i < FD_SETSIZE; i++) {
-        if (client_sockets[i] == 0) {
-          client_sockets[i] = newsockfd;
-          break;
-        }
-      }
-    }
-
-    for (i = 0; i < FD_SETSIZE; i++) {
-      sd = client_sockets[i];
-
-      if (FD_ISSET(sd, &readfds)) {
-        int valread = read(sd, buffer, BUF_SIZE);
-        if (valread == 0) {
-          close(sd);
-          client_sockets[i] = 0;
+    for (i = 0; i <= max_sd; i++) {
+      if (FD_ISSET(i, &readfds)) {
+        // Обработка нового подключения
+        if (i == sockfd) {
+          newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+          if (newsockfd < 0) {
+            error("ERROR on accept");
+          }
+          printf("New client\n");
+          if (newsockfd > max_sd)
+            max_sd = newsockfd;
+          FD_SET(newsockfd, &prime);
         } else {
-          buffer[valread] = '\0';
-          printf("Received: %s", buffer);
-          int a, b;
-          char sign;
-          sscanf(buffer, "%d %c %d", &a, &sign, &b);
-          int result = myfunc(a, b, sign);
-
-          snprintf(buffer, BUF_SIZE, "Result: %d\n", result);
-          write(sd, buffer, strlen(buffer));
+          strcpy(buffer, "\0");
+          int valread = read(i, buffer, BUF_SIZE);
+          if (valread == 0) {
+            close(i);
+            FD_CLR(i, &prime);
+          } else {
+            buffer[valread] = '\0';
+            printf("Received: %s", buffer);
+            int a, b;
+            char sign;
+            if (sscanf(buffer, "%d %c %d", &a, &sign, &b) != 3) {
+              write(i, "Wrong record\n", strlen("Wrong record\n"));
+              continue;
+            }
+            int result = myfunc(a, b, sign);
+            snprintf(buffer, BUF_SIZE, "Result: %d\n", result);
+            write(i, buffer, strlen(buffer));
+          }
         }
       }
     }
